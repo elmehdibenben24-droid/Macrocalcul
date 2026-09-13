@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MacroPath — Your Personal Macro Calculator</title>
+<meta name="description" content="A multi-step calculator that builds a personalized calorie and macro plan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#2F5233; --forest-2:#3E6B44; --sand:#F4EEE1; --card:#FFFFFF;
+    --coral:#E4572E; --ink:#242018; --muted:#79705F; --line:#E6DFCE;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--sand); color:var(--ink); font-family:'Work Sans',system-ui,sans-serif; }
+  h1,h2{font-family:'Fraunces',serif; font-weight:600;}
+  .wrap{max-width:640px; margin:0 auto; padding:48px 20px 80px;}
+  .kicker{color:var(--forest); font-weight:600; font-size:14px; margin:0 0 8px;}
+  h1{font-size:clamp(28px,5vw,38px); margin:0 0 10px; line-height:1.15;}
+  .intro{color:var(--muted); margin:0 0 32px; max-width:48ch;}
+  .progress{display:flex; gap:6px; margin-bottom:28px;}
+  .progress div{flex:1; height:4px; border-radius:4px; background:var(--line);}
+  .progress div.done{background:var(--forest);}
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:36px; }
+  .step{display:none;}
+  .step.active{display:block;}
+  .step h2{font-size:22px; margin:0 0 22px;}
+  .row{display:flex; gap:16px; margin-bottom:20px;}
+  .row .field{flex:1;}
+  .field label{ display:block; font-size:13px; font-weight:600; color:var(--forest); margin-bottom:8px; }
+  select, input[type=number], input[type=email]{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:8px;
+    font-family:'Work Sans',sans-serif; font-size:15px; background:var(--sand); color:var(--ink);
+  }
+  select:focus, input:focus{outline:2px solid var(--forest); outline-offset:1px;}
+  .pillgroup{display:flex; gap:10px; flex-wrap:wrap;}
+  .pill{ padding:10px 16px; border-radius:999px; border:1px solid var(--line); background:var(--sand); font-size:14px; cursor:pointer; user-select:none; }
+  .pill.selected{background:var(--forest); color:#fff; border-color:var(--forest);}
+  .nav{display:flex; justify-content:space-between; margin-top:32px;}
+  button{ font-family:'Work Sans',sans-serif; font-weight:600; font-size:15px; padding:12px 24px; border-radius:8px; border:none; cursor:pointer; }
+  .btn-primary{background:var(--forest); color:#fff;}
+  .btn-primary:hover{background:var(--forest-2);}
+  .btn-ghost{background:transparent; color:var(--muted);}
+  .btn-primary:disabled{opacity:0.4; cursor:not-allowed;}
+  .result-num{ font-family:'Fraunces',serif; font-size:48px; color:var(--coral); margin:0; line-height:1; }
+  .result-label{color:var(--muted); font-size:14px; margin:0 0 4px;}
+  .macro-grid{display:flex; gap:20px; margin-top:24px;}
+  .macro{ flex:1; background:var(--sand); border-radius:12px; padding:18px; text-align:center; }
+  .macro .g{font-family:'Fraunces',serif; font-size:26px; color:var(--forest);}
+  .macro .lab{font-size:13px; color:var(--muted); margin-top:4px;}
+  .final-msg{text-align:center; padding:20px 0;}
+  .final-msg .result-num{font-size:36px;}
+  footer{text-align:center; color:var(--muted); font-size:13px; margin-top:36px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">MacroPath</p>
+  <h1>Build your personal macro plan in 60 seconds</h1>
+  <p class="intro">Answer four quick questions and get a calorie and macro target built for your goal — plus the full breakdown sent to your inbox.</p>
+
+  <div class="progress">
+    <div class="done" data-p="1"></div>
+    <div data-p="2"></div>
+    <div data-p="3"></div>
+    <div data-p="4"></div>
+  </div>
+
+  <div class="card">
+    <div class="step active" data-step="1">
+      <h2>The basics</h2>
+      <div class="row">
+        <div class="field">
+          <label>Sex</label>
+          <select id="sex">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Age</label>
+          <input type="number" id="age" value="30" min="14" max="90">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Weight (kg)</label>
+          <input type="number" id="weight" value="75" min="30" max="250">
+        </div>
+        <div class="field">
+          <label>Height (cm)</label>
+          <input type="number" id="height" value="175" min="120" max="230">
+        </div>
+      </div>
+      <div class="nav">
+        <span></span>
+        <button class="btn-primary" onclick="goTo(2)">Continue</button>
+      </div>
+    </div>
+
+    <div class="step" data-step="2">
+      <h2>How active are you?</h2>
+      <div class="pillgroup" id="activityGroup">
+        <div class="pill" data-v="1.2">Sedentary</div>
+        <div class="pill selected" data-v="1.375">Light activity</div>
+        <div class="pill" data-v="1.55">Moderate</div>
+        <div class="pill" data-v="1.725">Very active</div>
+        <div class="pill" data-v="1.9">Athlete</div>
+      </div>
+      <div class="nav">
+        <button class="btn-ghost" onclick="goTo(1)">Back</button>
+        <button class="btn-primary" onclick="goTo(3)">Continue</button>
+      </div>
+    </div>
+
+    <div class="step" data-step="3">
+      <h2>What's your goal?</h2>
+      <div class="pillgroup" id="goalGroup">
+        <div class="pill" data-v="-500">Lose weight</div>
+        <div class="pill selected" data-v="0">Maintain</div>
+        <div class="pill" data-v="300">Build muscle</div>
+      </div>
+      <div class="nav">
+        <button class="btn-ghost" onclick="goTo(2)">Back</button>
+        <button class="btn-primary" onclick="renderResult(); goTo(4)">See my plan</button>
+      </div>
+    </div>
+
+    <div class="step" data-step="4">
+      <h2>Your daily target</h2>
+      <p class="result-label">Calories per day</p>
+      <p class="result-num" id="calOut">0</p>
+      <div class="macro-grid">
+        <div class="macro"><div class="g" id="proteinOut">0g</div><div class="lab">Protein</div></div>
+        <div class="macro"><div class="g" id="carbOut">0g</div><div class="lab">Carbs</div></div>
+        <div class="macro"><div class="g" id="fatOut">0g</div><div class="lab">Fat</div></div>
+      </div>
+
+      <div id="captureForm" style="margin-top:28px;">
+        <label style="display:block; font-size:13px; font-weight:600; color:var(--forest); margin-bottom:8px;">
+          Get the full weekly plan by email
+        </label>
+        <div class="row" style="margin-bottom:0;">
+          <div class="field"><input type="email" id="email" placeholder="you@email.com"></div>
+        </div>
+        <div class="nav">
+          <button class="btn-ghost" onclick="goTo(3)">Back</button>
+          <button class="btn-primary" onclick="submitEmail()">Send my plan</button>
+        </div>
+      </div>
+
+      <div id="thanksMsg" class="final-msg" style="display:none;">
+        <p class="result-num">✓</p>
+        <p>Thanks — your plan is on its way.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>Estimates use the Mifflin-St Jeor equation. Not medical advice.</footer>
+</div>
+
+<script>
+  let activity = 1.375, goal = 0;
+
+  document.querySelectorAll('#activityGroup .pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('#activityGroup .pill').forEach(x=>x.classList.remove('selected'));
+      p.classList.add('selected');
+      activity = +p.dataset.v;
+    });
+  });
+  document.querySelectorAll('#goalGroup .pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('#goalGroup .pill').forEach(x=>x.classList.remove('selected'));
+      p.classList.add('selected');
+      goal = +p.dataset.v;
+    });
+  });
+
+  function goTo(n){
+    document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+    document.querySelector('.step[data-step="'+n+'"]').classList.add('active');
+    document.querySelectorAll('.progress div').forEach(d=>{
+      d.classList.toggle('done', +d.dataset.p <= n);
+    });
+  }
+
+  function renderResult(){
+    const sex = document.getElementById('sex').value;
+    const age = +document.getElementById('age').value;
+    const weight = +document.getElementById('weight').value;
+    const height = +document.getElementById('height').value;
+
+    let bmr = 10*weight + 6.25*height - 5*age + (sex === 'male' ? 5 : -161);
+    let cals = Math.round((bmr * activity) + goal);
+
+    const protein = Math.round(weight * 2);
+    const fat = Math.round((cals * 0.25) / 9);
+    const carbCals = cals - (protein*4) - (fat*9);
+    const carbs = Math.max(0, Math.round(carbCals / 4));
+
+    document.getElementById('calOut').textContent = cals.toLocaleString('en-US');
+    document.getElementById('proteinOut').textContent = protein + 'g';
+    document.getElementById('carbOut').textContent = carbs + 'g';
+    document.getElementById('fatOut').textContent = fat + 'g';
+  }
+
+  function submitEmail(){
+    const email = document.getElementById('email').value.trim();
+    if(!email || !email.includes('@')){
+      document.getElementById('email').focus();
+      return;
+    }
+    console.log('Lead captured:', email);
+    document.getElementById('captureForm').style.display = 'none';
+    document.getElementById('thanksMsg').style.display = 'block';
+  }
+</script>
+</body>
+  </html>
